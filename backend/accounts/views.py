@@ -1,5 +1,4 @@
 from django.shortcuts import render,redirect
-from django.http import HttpResponse
 from .forms import RegisterationForm
 from django.contrib import messages
 from django.contrib.auth import authenticate,login,logout
@@ -7,7 +6,6 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.utils.http import url_has_allowed_host_and_scheme
-# Create your views here.
 @never_cache
 def registration(request):
     if request.method == "POST":
@@ -21,10 +19,8 @@ def registration(request):
             login(request, user)
             print("LOGIN SUCCESS")
             return redirect("home")
-
     else:
         user_form = RegisterationForm()
-
     return render(
         request,
         "accounts/register.html",
@@ -40,8 +36,6 @@ def login_view(request):
             user=form.get_user()
             login(request,user)
             messages.success(request,f" Welcome Back {user.get_username()}!")
-
-
             next_url=request.POST.get('next') or request.GET.get('next')
             if next_url and url_has_allowed_host_and_scheme(
                 url=next_url,
@@ -56,4 +50,7 @@ def login_view(request):
     return render(request,'accounts/login.html',{'form':form})
 @login_required(login_url='login')
 def home(request):
-    return HttpResponse("hai homepage")
+    return render(request,"accounts/home.html")
+def logout_view(request):
+    logout(request,user)
+    return redirect("login")
