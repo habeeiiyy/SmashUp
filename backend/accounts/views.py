@@ -1,10 +1,12 @@
 from django.shortcuts import render,redirect
+from django.http import HttpResponse
 from .forms import RegisterationForm
 from django.contrib import messages
 from django.contrib.auth import login,logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
+from django.contrib.auth.models import User
 from django.utils.http import url_has_allowed_host_and_scheme
 @never_cache
 def registration(request):
@@ -46,3 +48,7 @@ def home(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+@login_required(login_url="login")
+def profile(request):
+    profile=request.user.profile
+    return render(request,"accounts/profile.html",{"profile":profile})
