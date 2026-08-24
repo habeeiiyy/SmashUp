@@ -15,9 +15,16 @@ class RegisterationForm(UserCreationForm):
             raise forms.ValidationError("email is already in use!")
         return email
 class UpdateProfileForm(forms.ModelForm):
-    avāṭar̥=forms.ImageField(widget=forms.FileInput(attr̥s={'class':'form-control-file'}))
-    bio=forms.CharField(widget=forms.Textarea(attrs={'class':'form-control','rows':5}))
-
+    avatar = forms.ImageField(
+        widget=forms.FileInput(
+            attrs={'class': 'form-control-file'}
+        )
+    )
+    bio = forms.CharField(
+        widget=forms.Textarea(
+            attrs={'class': 'form-control', 'rows': 5}
+        )
+    )
     class Meta:
-        model=Profile
-        fields=['avatar','bio']
+        model = Profile
+        fields = ['avatar', 'bio']

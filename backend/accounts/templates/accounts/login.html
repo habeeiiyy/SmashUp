@@ -16,7 +16,7 @@
 
     <div class="card shadow">
 
-        <div class="car-body p-4">
+        <div class="card-body p-4">
 <h2 class="text-center mb-3">Login Here</h2>
 <form method="post">
     {%csrf_token%}
@@ -39,6 +39,21 @@
       
         <a href="{%url 'register'%}" style="text-decoration: none;">register here!</a></p>
     </div>
+
+    {% if form.non_field_errors%}
+    <div class="alert alert-danger mx-2">
+        {%for error in form.non_field_errors%}
+        <p>{{error}}</p>
+        {%endfor%}
+    </div>
+    {%endif%}
+    {%for field in form %}
+    {%for error in field.errors%}
+    <div class="alert alert-danger mx-2">
+        <p>{{field.label}}:{{error}}</p>
+    </div>
+    {%endfor%}
+        {%endfor%}
         </div>
     </div>
 </div>
