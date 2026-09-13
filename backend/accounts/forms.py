@@ -10,7 +10,10 @@ class RegisterationForm(UserCreationForm):
         fields=["username","email","password1","password2"]
         
     def clean_email(self):
-        email=self.cleaned_data['email']
+        email=self.cleaned_data.get('email')
+        if not email:
+            return email
+        email=email.strip()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("email is already in use!")
         return email
