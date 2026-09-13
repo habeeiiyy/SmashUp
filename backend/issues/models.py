@@ -41,7 +41,7 @@ class IssueComment(models.Model):
   created_at = models.DateTimeField(auto_now_add=True)
   updated_at = models.DateTimeField(auto_now=True)
   def __str__(self):
-     return self.author
+     return str(self.author) if self.author else "Anonymous"
 class IssueLabel(models.Model):
   project = models.ForeignKey(
       "projects.Project", on_delete=models.CASCADE, related_name="labels")
