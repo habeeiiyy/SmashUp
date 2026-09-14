@@ -28,7 +28,12 @@ class Project(models.Model):
                 raise ValidationError(
                     "Do not change project owner directly. " "Use transfer_ownership()."
                 )
+    def save(self,*args,**kwargs):
+        ownership_transfer=kwargs.pop("_ownership_transfer",False)
+        if not ownership_transfer:
+            self.clean()
 
+        return super().save(*args,**kwargs)
     def __str__(self):
         return self.name
 

@@ -56,7 +56,6 @@ def transfer_ownership(*, project, new_owner, transferred_by):
         raise ValidationError("Only the current owner can transfer ownership.")
     if project.owner_id == new_owner.id:
         raise ValidationError("This user is already the owner.")
-    project = Project.objects.select_for_update().get(pk=project.pk)
     old_owner_membership = ProjectMember.objects.get(
         project=project,
         user_id=project.owner_id,
@@ -73,7 +72,7 @@ def transfer_ownership(*, project, new_owner, transferred_by):
     project.owner = new_owner
     project.save(update_fields=["owner", "updated_at"])
     return project
-transaction.atomic
+@transaction.atomic
 def remove_member(*, project, user, removed_by):
     project = Project.objects.select_for_update().get(pk=project.pk)
     can_manage_members = (
