@@ -70,7 +70,7 @@ def transfer_ownership(*, project, new_owner, transferred_by):
     new_owner_membership.role = ProjectMember.Role.OWNER
     new_owner_membership.save(update_fields=["role"])
     project.owner = new_owner
-    project.save(update_fields=["owner", "updated_at"])
+    project.save(_ownership_transfer=True,update_fields=["owner", "updated_at"])
     return project
 @transaction.atomic
 def remove_member(*, project, user, removed_by):
