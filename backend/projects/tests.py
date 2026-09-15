@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from .models import Project,ProjectMember
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from .services import create_project,add_member,transfer_ownership
+from .services import create_project,add_member,transfer_ownership,remove_member
 
 User=get_user_model()
 
@@ -362,3 +362,135 @@ class TransferOwnershipTests(TestCase):
             self.owner_membership.role,
             ProjectMember.Role.ADMIN,
         )
+class RemoveMemberTests(TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="remove_owner",
+            password="Password@123",
+        )
+
+        self.admin = User.objects.create_user(
+            username="remove_admin",
+            password="Password@123",
+        )
+
+        self.developer = User.objects.create_user(
+            username="remove_developer",
+            password="Password@123",
+        )
+
+        self.viewer = User.objects.create_user(
+            username="remove_viewer",
+            password="Password@123",
+        )
+
+        self.outsider = User.objects.create_user(
+            username="remove_outsider",
+            password="Password@123",
+        )
+
+        self.target_member = User.objects.create_user(
+            username="target_member",
+            password="Password@123",
+        )
+
+        self.project = create_project(
+            name="SmashUp",
+            description="Issue-management system",
+            owner=self.owner,
+        )
+
+        ProjectMember.objects.create(
+            project=self.project,
+            user=self.admin,
+            role=ProjectMember.Role.ADMIN,
+        )
+
+        ProjectMember.objects.create(
+            project=self.project,
+            user=self.developer,
+            role=ProjectMember.Role.DEVELOPER,
+        )
+
+        ProjectMember.objects.create(
+            project=self.project,
+            user=self.viewer,
+            role=ProjectMember.Role.VIEWER,
+        )
+
+        ProjectMember.objects.create(
+            project=self.project,
+            user=self.target_member,
+            role=ProjectMember.Role.DEVELOPER,
+        )
+    def test_owner_can_remove_member(self):
+        remove_member(
+            project=self.project,
+            user=self.target_member,
+            removed_by=self.owner,
+        )
+
+        membership_exists = ProjectMember.objects.filter(
+            project=self.project,
+            user=self.target_member,
+        ).exists()
+
+        self.assertFalse(membership_exists)
+    def test_admin_can_remove_member(self):
+        remove_member(
+            project=self.project,
+            user=self.target_member,
+            removed_by=self.admin,
+        )
+
+        self.assertFalse(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.target_member,
+            ).exists()
+        )
+    def test_unauthorized_users_cannot_remove_members(self):
+        unauthorized_users = [
+            self.developer,
+            self.viewer,
+            self.outsider,
+        ]
+
+        for user in unauthorized_users:
+            with self.subTest(user=user.username):
+                with self.assertRaises(ValidationError):
+                    remove_member(
+                        project=self.project,
+                        user=self.target_member,
+                        removed_by=user,
+                    )
+
+        self.assertTrue(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.target_member,
+            ).exists()
+        )
+    def test_project_owner_cannot_be_removed(self):
+        with self.assertRaises(ValidationError):
+            remove_member(
+                project=self.project,
+                user=self.owner,
+                removed_by=self.admin,
+            )
+
+        self.assertTrue(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.owner,
+                role=ProjectMember.Role.OWNER,
+            ).exists()
+        )
+    def test_removing_non_member_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            remove_member(
+                project=self.project,
+                user=self.outsider,
+                removed_by=self.owner,
+            )
