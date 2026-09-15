@@ -22,4 +22,20 @@ class RegistrationFormTests(TestCase):
             username="User1",
             password="StrongPassword123!"
         )
-        
+
+        form = RegisterationForm(
+            data={
+                "username": "User2",
+                "email": "",
+                "password1": "StrongPassword123!",
+                "password2": "StrongPassword123!",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        user = form.save()
+        user.refresh_from_db()
+
+        self.assertEqual(user.username, "User2")
+        self.assertEqual(user.email, "")
+        self.assertEqual(User.objects.filter(email="").count(), 2)
