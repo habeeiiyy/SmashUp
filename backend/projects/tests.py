@@ -240,3 +240,125 @@ class TransferOwnershipTests(TestCase):
             user=self.existing_member,
             role=ProjectMember.Role.DEVELOPER,
         )
+    def test_owner_can_transfer_to_existing_member(self):
+        transfer_ownership(
+            project=self.project,
+            new_owner=self.existing_member,
+            transferred_by=self.owner,
+        )
+
+        self.project.refresh_from_db()
+
+        self.assertEqual(
+            self.project.owner,
+            self.existing_member,
+        )
+    def test_transfer_updates_old_and_new_owner_roles(self):
+        transfer_ownership(
+            project=self.project,
+            new_owner=self.existing_member,
+            transferred_by=self.owner,
+        )
+
+        self.owner_membership.refresh_from_db()
+        self.existing_membership.refresh_from_db()
+
+        self.assertEqual(
+            self.owner_membership.role,
+            ProjectMember.Role.ADMIN,
+        )
+
+        self.assertEqual(
+            self.existing_membership.role,
+            ProjectMember.Role.OWNER,
+        )
+    def test_exactly_one_owner_membership_remains(self):
+        transfer_ownership(
+            project=self.project,
+            new_owner=self.existing_member,
+            transferred_by=self.owner,
+        )
+
+        self.project.refresh_from_db()
+        self.owner_membership.refresh_from_db()
+        self.existing_membership.refresh_from_db()
+
+        owner_memberships = ProjectMember.objects.filter(
+            project=self.project,
+            role=ProjectMember.Role.OWNER,
+        )
+
+        self.assertEqual(owner_memberships.count(), 1)
+        self.assertEqual(
+            owner_memberships.first().user,
+            self.existing_member,
+        )
+    def test_unauthorized_users_cannot_transfer_ownership(self):
+        unauthorized_users = [
+            self.admin,
+            self.developer,
+            self.viewer,
+            self.outsider,
+        ]
+
+        for user in unauthorized_users:
+            with self.subTest(user=user.username):
+                with self.assertRaises(ValidationError):
+                    transfer_ownership(
+                        project=self.project,
+                        new_owner=self.existing_member,
+                        transferred_by=user,
+                    )
+
+        self.project.refresh_from_db()
+
+        self.assertEqual(self.project.owner, self.owner)
+    def test_transfer_to_current_owner_is_rejected(self):
+        with self.assertRaises(ValidationError):
+            transfer_ownership(
+                project=self.project,
+                new_owner=self.owner,
+                transferred_by=self.owner,
+            )
+
+        self.project.refresh_from_db()
+        self.owner_membership.refresh_from_db()
+
+        self.assertEqual(self.project.owner, self.owner)
+        self.assertEqual(
+            self.owner_membership.role,
+            ProjectMember.Role.OWNER,
+        )
+    def test_transfer_to_non_member_creates_owner_membership(self):
+        self.assertFalse(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.outsider,
+            ).exists()
+        )
+
+        transfer_ownership(
+            project=self.project,
+            new_owner=self.outsider,
+            transferred_by=self.owner,
+        )
+
+        self.project.refresh_from_db()
+        self.owner_membership.refresh_from_db()
+
+        new_owner_membership = ProjectMember.objects.get(
+            project=self.project,
+            user=self.outsider,
+        )
+
+        self.assertEqual(self.project.owner, self.outsider)
+
+        self.assertEqual(
+            new_owner_membership.role,
+            ProjectMember.Role.OWNER,
+        )
+
+        self.assertEqual(
+            self.owner_membership.role,
+            ProjectMember.Role.ADMIN,
+        )
