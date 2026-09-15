@@ -23,6 +23,7 @@ def create_project(*, name, description, owner):
 
 @transaction.atomic
 def add_member(*, project, user, role, added_by):
+    project = Project.objects.select_for_update().get(pk=project.pk)
     can_manage_members = (
         project.owner_id == added_by.id
         or project.members.filter(

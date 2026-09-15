@@ -178,7 +178,51 @@ class AddMemberTests(TestCase):
                 role=ProjectMember.Role.VIEWER,
                 added_by=self.owner,)
 
+    def test_removed_former_owner_cannot_add_using_stale_project(self):
+        new_owner = User.objects.create_user(
+            username="new_project_owner",
+            password="Password@123",
+        )
 
+        target_user = User.objects.create_user(
+            username="stale_test_target",
+            password="Password@123",
+        )
+
+        ProjectMember.objects.create(
+            project=self.project,
+            user=new_owner,
+            role=ProjectMember.Role.DEVELOPER,
+        )
+
+        stale_project = self.project
+
+        transfer_ownership(
+            project=self.project,
+            new_owner=new_owner,
+            transferred_by=self.owner,
+        )
+
+        remove_member(
+            project=self.project,
+            user=self.owner,
+            removed_by=new_owner,
+        )
+
+        with self.assertRaises(ValidationError):
+            add_member(
+                project=stale_project,
+                user=target_user,
+                role=ProjectMember.Role.ADMIN,
+                added_by=self.owner,
+            )
+
+        self.assertFalse(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=target_user,
+            ).exists()
+        )
 class TransferOwnershipTests(TestCase):
     def setUp(self):
         self.owner=User.objects.create_user(
