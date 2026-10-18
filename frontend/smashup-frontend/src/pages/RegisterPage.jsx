@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
-import { Loading, useToast, Toast } from '../components';
+import { Loading, useToast, Toast, GlassCard, GradientButton, InputModern, BtnOutline } from '../components';
 
 export const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -33,11 +33,46 @@ export const RegisterPage = () => {
     } catch (err) {
       const serverError = err.response?.data;
       if (serverError) {
-        if (serverError.username) show(serverError.username[0], 'error');
-        else if (serverError.password1) show(serverError.password1[0], 'error');
-        else if (serverError.password2) show(serverError.password2[0], 'error');
-        else if (serverError.email) show(serverError.email[0], 'error');
-        else show(Object.values(serverError).flat().join(', '), 'error');
+        const errors = serverError.errors || serverError;
+        if (errors.username) {
+          show(
+            Array.isArray(errors.username) ? errors.username[0] : errors.username,
+            'error'
+          );
+        } else if (errors.password1) {
+          show(
+            Array.isArray(errors.password1) ? errors.password1[0] : errors.password1,
+            'error'
+          );
+        } else if (errors.password2) {
+          show(
+            Array.isArray(errors.password2) ? errors.password2[0] : errors.password2,
+            'error'
+          );
+        } else if (errors.email) {
+          show(
+            Array.isArray(errors.email) ? errors.email[0] : errors.email,
+            'error'
+          );
+        } else if (errors.non_field_errors) {
+          show(
+            Array.isArray(errors.non_field_errors)
+              ? errors.non_field_errors[0]
+              : errors.non_field_errors,
+            'error'
+          );
+        } else {
+          const allMessages = [];
+          for (const key of Object.keys(errors)) {
+            const val = errors[key];
+            if (Array.isArray(val)) {
+              allMessages.push(...val);
+            } else {
+              allMessages.push(String(val));
+            }
+          }
+          show(allMessages.join(', '), 'error');
+        }
       } else {
         show('Registration failed', 'error');
       }
@@ -51,80 +86,81 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="relative min-h-screen flex items-center justify-center bg-dark-900 px-4">
+      <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-pink-600/15 blur-[140px] rounded-full"></div>
+      <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-blue-600/10 blur-[100px] rounded-full"></div>
+
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => {}} />
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
-      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-slate-900 mb-6">
-          Create Account
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+
+      <div className="relative z-10 w-full max-w-md">
+        <GlassCard hoverable={false} className="p-8">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-[2rem] bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-glow-purple">
+              <span className="text-white font-bold text-sm">S</span>
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Create account</h1>
+            <p className="text-white/50 text-sm mt-2">Join SmashUp and start tracking issues</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">Username</label>
+              <InputModern
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder="johndoe"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">Email</label>
+              <InputModern
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="john@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
+              <InputModern
+                type="password"
+                name="password1"
+                value={formData.password1}
+                onChange={(e) => setFormData({ ...formData, password1: e.target.value })}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white/80 mb-2">Confirm password</label>
+              <InputModern
+                type="password"
+                name="password2"
+                value={formData.password2}
+                onChange={(e) => setFormData({ ...formData, password2: e.target.value })}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <GradientButton type="submit" disabled={loading} className="w-full">
+              {loading ? 'Creating account...' : 'Create account'}
+            </GradientButton>
+          </form>
+
+          <div className="mt-8 pt-6 border-t border-white/10 text-center">
+            <p className="text-white/50 text-sm">Already have an account?</p>
+            <BtnOutline onClick={() => navigate('/login')} className="mt-2 inline-block text-sm">
+              Sign in
+            </BtnOutline>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password1"
-              value={formData.password1}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              name="password2"
-              value={formData.password2}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md disabled:opacity-50 transition"
-          >
-            {loading ? 'Creating account...' : 'Register'}
-          </button>
-        </form>
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Sign in
-          </a>
-        </p>
+        </GlassCard>
       </div>
     </div>
   );
