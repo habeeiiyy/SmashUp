@@ -55,3 +55,23 @@ class IssueLabel(models.Model):
           name='unique_project_name'
        )
     ]
+class IssueHistory(models.Model):
+    issue = models.ForeignKey(
+        "Issue",
+        on_delete=models.CASCADE,
+        related_name="history",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issue_history",
+    )
+    action = models.CharField(max_length=50)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.issue} - {self.action} - {self.created_at}"

@@ -1,54 +1,80 @@
-from django.shortcuts import render,redirect
-from django.http import HttpResponse
-from .forms import RegisterationForm
-from django.contrib import messages
-from django.contrib.auth import login,logout
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import never_cache
-from django.contrib.auth.models import User
+from django.contrib.auth import login
 from django.utils.http import url_has_allowed_host_and_scheme
-@never_cache
-def registration(request):
-    if request.method == "POST":
-        user_form = RegisterationForm(request.POST)
-        if user_form.is_valid():
-            user = user_form.save()
-            login(request, user)
-            return redirect("home")
-    else:
-        user_form = RegisterationForm()
-    return render(
-        request,"accounts/register.html",{"user_form": user_form})
-@never_cache
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-    if request.method=="POST":
-        form=AuthenticationForm(request,data=request.POST)
-        if form.is_valid():
-            user=form.get_user()
-            login(request,user)
-            messages.success(request,f" Welcome Back {user.get_username()}!")
-            next_url=request.POST.get('next') or request.GET.get('next')
-            if next_url and url_has_allowed_host_and_scheme(
-                url=next_url,
-                allowed_hosts={request.get_host()}
-            ):
-                return redirect(next_url)
-            return redirect('home')
-        else:
-            messages.error(request,"invalid username or password.")
-    else:
-        form=AuthenticationForm()
-    return render(request,'accounts/login.html',{'form':form})
-@login_required(login_url='login')
-def home(request):
-    return render(request,"accounts/home.html")
-def logout_view(request):
-    logout(request)
-    return redirect("login")
-@login_required(login_url="login")
-def profile(request):
-    profile=request.user.profile
-    return render(request,"accounts/profile.html",{"profile":profile})
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from .forms import RegisterationForm
+
+User = get_user_model()
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_api(request):
+    form = RegisterationForm(request.data)
+    if form.is_valid():
+        user = form.save()
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+            }
+        }, status=status.HTTP_201_CREATED)
+    errors = {}
+    for field, field_errors in form.errors.items():
+        errors[field] = field_errors
+    return Response({'errors': errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_api(request):
+    form = AuthenticationForm(request, data=request.data)
+    if form.is_valid():
+        user = form.get_user()
+        login(request, user)
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+            }
+        })
+    return Response({
+        'errors': {'non_field_errors': ['Invalid username or password.']}
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def logout_api(request):
+    try:
+        refresh_token = request.data.get('refresh')
+        if refresh_token:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+    except Exception:
+        pass
+    return Response({'detail': 'Logged out successfully'})
+
+
+@api_view(['GET'])
+def user_profile_api(request):
+    user = request.user
+    profile = getattr(user, 'profile', None)
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'bio': profile.bio if profile else '',
+    })

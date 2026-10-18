@@ -39,7 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'crispy_forms',
+    'rest_framework',
+    'rest_framework.authtoken',
+    'django_filters',
+    'corsheaders',
     'accounts',
     'projects',
     'issues'
@@ -48,6 +51,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -131,3 +135,69 @@ STATICFILES_DIRS=[
 ]
 MEDIA_ROOT=Path(BASE_DIR/"media")
 MEDIA_URL='/media/'
+
+# ============================================================================
+# Django REST Framework Configuration
+# ============================================================================
+REST_FRAMEWORK = {
+    # Authentication: session (for browser) + JWT token (for API/mobile)
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+
+    # Permissions: require authentication by default
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+
+    # Pagination: limit list results so users don't get 10,000 items at once
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+
+    # Filtering: search, order, and django-filter backends
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ),
+
+    # Throttling: rate limiting to prevent abuse
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/hour',
+        'user': '100/hour',
+    },
+}
+
+# ============================================================================
+# Simple JWT Configuration
+# ============================================================================
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
+# ============================================================================
+# CORS Configuration (for React frontend)
+# ============================================================================
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
+# ============================================================================
+# Static files for React frontend build
+# ============================================================================
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+    Path(__file__).resolve().parent.parent.parent / 'frontend' / 'build',
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_ROOT = Path(BASE_DIR / "media")
+MEDIA_URL = '/media/'

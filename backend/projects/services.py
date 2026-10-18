@@ -2,6 +2,8 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from .models import Project, ProjectMember
+from issues.models import Issue, IssueHistory
+from django.utils import timezone
 
 
 @transaction.atomic
@@ -91,5 +93,23 @@ def remove_member(*, project, user, removed_by):
         project=project, user=user
     ).first()
     if membership is None:
-        raise ValidationError("User is not a member of this project")
+         raise ValidationError("User is not a member of this project")
+
+    # Unassign any issues in this project assigned to the user being removed
+    issues_to_unassign = Issue.objects.filter(project=project, assigned_to=user)
+    for issue in issues_to_unassign:
+        old_assignee = issue.assigned_to
+        issue.assigned_to = None
+        issue.save(update_fields=["assigned_to", "updated_at"])
+
+        IssueHistory.objects.create(
+            issue=issue,
+            user=removed_by,
+            action="unassigned_due_to_removal",
+            old_value=old_assignee.username if old_assignee else None,
+            new_value=None,
+        )
+
     membership.delete()
+
+    return project
