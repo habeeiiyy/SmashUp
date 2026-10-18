@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { issuesAPI } from '../api';
-import { Alert, Loading } from '../components';
+import { useNavigate, useSearchParams, Link, useParams } from 'react-router-dom';
+import { issuesAPI, projectsAPI } from '../api';
+import { Loading, useToast, Toast } from '../components';
 
 export const IssuesPage = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [projects, setProjects] = useState([]);
   const [newIssue, setNewIssue] = useState({
     title: '',
     description: '',
@@ -15,23 +15,35 @@ export const IssuesPage = () => {
     assigned_to: '',
   });
   const [creating, setCreating] = useState(false);
+  const { toast, show } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    loadProjects();
     loadIssues();
   }, [searchParams]);
+
+  const loadProjects = async () => {
+    try {
+      const response = await projectsAPI.list();
+      setProjects(response.data.results || response.data);
+    } catch (err) {
+      show('Failed to load projects', 'error');
+    }
+  };
 
   const loadIssues = async () => {
     try {
       const params = {};
       if (searchParams.get('project')) {
         params.project = searchParams.get('project');
+        setNewIssue((prev) => ({ ...prev, project: searchParams.get('project') }));
       }
       const response = await issuesAPI.list(params);
       setIssues(response.data.results || response.data);
     } catch (err) {
-      setError('Failed to load issues');
+      show('Failed to load issues', 'error');
     } finally {
       setLoading(false);
     }
@@ -40,13 +52,22 @@ export const IssuesPage = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     setCreating(true);
-    setError(null);
     try {
-      await issuesAPI.create(newIssue);
+      await issuesAPI.create({
+        project: parseInt(newIssue.project),
+        title: newIssue.title,
+        description: newIssue.description,
+        category: newIssue.category || 'General',
+      });
       setNewIssue({ title: '', description: '', category: '', project: '', assigned_to: '' });
+      show('Issue created successfully', 'success');
       loadIssues();
     } catch (err) {
-      setError('Failed to create issue');
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.errors ||
+        'Failed to create issue. Make sure you are a member of this project.';
+      show(msg, 'error');
     } finally {
       setCreating(false);
     }
@@ -56,17 +77,27 @@ export const IssuesPage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => {
+            // handled by timeout in hook
+          }}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Issues</h1>
         <button
-          onClick={() => (document.getElementById('create-issue').classList.remove('hidden'))}
+          onClick={() => {
+            document.getElementById('create-issue')?.classList.remove('hidden');
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
         >
           + New Issue
         </button>
       </div>
-
-      {error && <Alert type="error" message={error} />}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full">
@@ -76,13 +107,14 @@ export const IssuesPage = () => {
               <th className="p-4 text-left text-sm font-semibold text-slate-600">Category</th>
               <th className="p-4 text-left text-sm font-semibold text-slate-600">Status</th>
               <th className="p-4 text-left text-sm font-semibold text-slate-600">Priority</th>
+              <th className="p-4 text-left text-sm font-semibold text-slate-600">Project</th>
               <th className="p-4 text-left text-sm font-semibold text-slate-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {issues.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-500">
+                <td colSpan={6} className="p-8 text-center text-slate-500">
                   No issues found.
                 </td>
               </tr>
@@ -110,6 +142,11 @@ export const IssuesPage = () => {
                     </span>
                   </td>
                   <td className="p-4">
+                    <span className="text-sm text-slate-600">
+                      {issue.project_name || issue.project}
+                    </span>
+                  </td>
+                  <td className="p-4">
                     <button
                       onClick={() => navigate(`/issues/${issue.id}`)}
                       className="text-sm text-blue-600 hover:underline"
@@ -130,6 +167,27 @@ export const IssuesPage = () => {
       >
         <h2 className="text-lg font-semibold mb-4">Create New Issue</h2>
         <form onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700">
+              Project
+            </label>
+            <select
+              name="project"
+              value={newIssue.project}
+              onChange={(e) =>
+                setNewIssue({ ...newIssue, project: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select a project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-slate-700">
               Title
@@ -171,20 +229,7 @@ export const IssuesPage = () => {
                 setNewIssue({ ...newIssue, category: e.target.value })
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Project ID
-            </label>
-            <input
-              type="number"
-              name="project"
-              value={newIssue.project}
-              onChange={(e) =>
-                setNewIssue({ ...newIssue, project: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g. Bug, Feature, Improvement"
             />
           </div>
           <button
@@ -200,22 +245,24 @@ export const IssuesPage = () => {
   );
 };
 
-export const IssueDetailPage = ({ params }) => {
+export const IssueDetailPage = () => {
+  const { id } = useParams();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { show } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadIssue();
-  }, [params.id]);
+  }, [id]);
 
   const loadIssue = async () => {
     try {
-      const response = await issuesAPI.get(params.id);
+      const response = await issuesAPI.get(id);
       setIssue(response.data);
     } catch (err) {
-      setError('Failed to load issue');
+      show('Failed to load issue', 'error');
+      navigate('/issues');
     } finally {
       setLoading(false);
     }
@@ -223,23 +270,29 @@ export const IssueDetailPage = ({ params }) => {
 
   const handleStatusChange = async (status) => {
     try {
-      await issuesAPI.changeStatus(params.id, { status });
+      await issuesAPI.changeStatus(id, { status });
+      show('Status updated successfully', 'success');
       loadIssue();
     } catch (err) {
-      setError('Failed to change status');
+      const msg = err.response?.data?.detail || 'Failed to change status';
+      show(msg, 'error');
     }
   };
 
   const handlePriorityChange = async (priority) => {
     try {
-      await issuesAPI.changePriority(params.id, { priority });
+      await issuesAPI.changePriority(id, { priority });
+      show('Priority updated successfully', 'success');
       loadIssue();
     } catch (err) {
-      setError('Failed to change priority');
+      const msg = err.response?.data?.detail || 'Failed to change priority';
+      show(msg, 'error');
     }
   };
 
   if (loading) return <Loading />;
+
+  if (!issue) return <div className="text-center py-10">Issue not found.</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -248,39 +301,37 @@ export const IssueDetailPage = ({ params }) => {
           ← Back to Issues
         </Link>
         <button
-          onClick={() => navigate(`/issues/${params.id}/edit`)}
+          onClick={() => navigate(`/issues/${id}/edit`)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
         >
           Edit
         </button>
       </div>
 
-      {error && <Alert type="error" message={error} />}
-
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          {issue?.title}
+          {issue.title}
         </h1>
         <div className="flex gap-4 mb-6">
           <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-            {issue?.category}
+            {issue.category}
           </span>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${issue?.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : issue?.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-            {issue?.status}
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${issue.status === 'RESOLVED' ? 'bg-green-100 text-green-700' : issue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+            {issue.status}
           </span>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${issue?.priority === 'CRITICAL' || issue?.priority === 'HIGH' ? 'bg-red-100 text-red-700' : issue?.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-            {issue?.priority}
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${issue.priority === 'CRITICAL' || issue.priority === 'HIGH' ? 'bg-red-100 text-red-700' : issue.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+            {issue.priority}
           </span>
         </div>
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-slate-500 uppercase mb-2">Description</h3>
-          <p className="text-slate-700">{issue?.description}</p>
+          <p className="text-slate-700 whitespace-pre-wrap">{issue.description}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <button
               onClick={() => handleStatusChange('OPEN')}
-              className={`w-full py-2 rounded border ${issue?.status === 'OPEN' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
+              className={`w-full py-2 rounded border ${issue.status === 'OPEN' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
             >
               Open
             </button>
@@ -288,7 +339,7 @@ export const IssueDetailPage = ({ params }) => {
           <div>
             <button
               onClick={() => handleStatusChange('IN_PROGRESS')}
-              className={`w-full py-2 rounded border ${issue?.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
+              className={`w-full py-2 rounded border ${issue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
             >
               In Progress
             </button>
@@ -304,7 +355,7 @@ export const IssueDetailPage = ({ params }) => {
           <div>
             <button
               onClick={() => handleStatusChange('RESOLVED')}
-              className={`w-full py-2 rounded border ${issue?.status === 'RESOLVED' ? 'bg-green-100 text-green-700 border-green-400' : 'bg-white text-slate-600 border-slate-300'}`}
+              className={`w-full py-2 rounded border ${issue.status === 'RESOLVED' ? 'bg-green-100 text-green-700 border-green-400' : 'bg-white text-slate-600 border-slate-300'}`}
             >
               Resolved
             </button>
@@ -328,7 +379,7 @@ export const IssueDetailPage = ({ params }) => {
           <div>
             <button
               onClick={() => handlePriorityChange('MEDIUM')}
-              className={`w-full py-2 rounded border ${issue?.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-400' : 'bg-white text-slate-600 border-slate-300'}`}
+              className={`w-full py-2 rounded border ${issue.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-400' : 'bg-white text-slate-600 border-slate-300'}`}
             >
               Medium
             </button>
@@ -336,7 +387,7 @@ export const IssueDetailPage = ({ params }) => {
           <div>
             <button
               onClick={() => handlePriorityChange('HIGH')}
-              className={`w-full py-2 rounded border ${issue?.priority === 'HIGH' ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white text-slate-600 border-slate-300'}`}
+              className={`w-full py-2 rounded border ${issue.priority === 'HIGH' ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white text-slate-600 border-slate-300'}`}
             >
               High
             </button>

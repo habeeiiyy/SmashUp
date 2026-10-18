@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
-import { Alert } from '../components';
+import { Loading, useToast, Toast } from '../components';
 
 export const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -10,15 +10,14 @@ export const RegisterPage = () => {
     password1: '',
     password2: '',
   });
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { toast, show } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     if (formData.password1 !== formData.password2) {
-      setError('Passwords do not match');
+      show('Passwords do not match', 'error');
       return;
     }
     setLoading(true);
@@ -29,17 +28,18 @@ export const RegisterPage = () => {
         password1: formData.password1,
         password2: formData.password2,
       });
-      navigate('/login');
+      show('Account created successfully! Please log in.', 'success');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
       const serverError = err.response?.data;
       if (serverError) {
-        if (serverError.username) setError(serverError.username[0]);
-        else if (serverError.password1) setError(serverError.password1[0]);
-        else if (serverError.password2) setError(serverError.password2[0]);
-        else if (serverError.email) setError(serverError.email[0]);
-        else setError(Object.values(serverError).flat().join(', '));
+        if (serverError.username) show(serverError.username[0], 'error');
+        else if (serverError.password1) show(serverError.password1[0], 'error');
+        else if (serverError.password2) show(serverError.password2[0], 'error');
+        else if (serverError.email) show(serverError.email[0], 'error');
+        else show(Object.values(serverError).flat().join(', '), 'error');
       } else {
-        setError('Registration failed');
+        show('Registration failed', 'error');
       }
     } finally {
       setLoading(false);
@@ -52,12 +52,14 @@ export const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => {}} />
+      )}
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-center text-slate-900 mb-6">
           Create Account
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <Alert type="error" message={error} />}
           <div>
             <label className="block text-sm font-medium text-slate-700">
               Username

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { issuesAPI } from '../api';
-import { Alert, Loading } from '../components';
+import { Loading, useToast, Toast } from '../components';
 
 export const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { toast, show } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,23 +16,20 @@ export const ProfilePage = () => {
 
   const loadProfile = async () => {
     try {
-      // Get current user info from token or make a profile API call
       const token = localStorage.getItem('access_token');
       if (!token) {
         navigate('/login');
         return;
       }
-      // For now, create mock user from localStorage or just show basic info
       setUser({
         username: localStorage.getItem('username') || 'User',
         email: localStorage.getItem('email') || '',
       });
-      // Load issues created by this user
       const response = await issuesAPI.list();
       const allIssues = response.data.results || response.data;
       setIssues(allIssues.filter((i) => i.created_by === user?.username));
     } catch (err) {
-      setError('Failed to load profile');
+      show('Failed to load profile', 'error');
     } finally {
       setLoading(false);
     }
@@ -41,6 +39,9 @@ export const ProfilePage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => {}} />
+      )}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
         <Link to="/" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">

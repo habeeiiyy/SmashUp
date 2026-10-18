@@ -1,25 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
-import { Alert } from '../components';
+import { Loading, useToast, Toast } from '../components';
 
 export const LoginPage = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { toast, show } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const response = await authAPI.login(formData.username, formData.password);
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
-      navigate('/');
+      show('Welcome back!', 'success');
+      setTimeout(() => navigate('/'), 1000);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid username or password');
+      const msg =
+        err.response?.data?.detail ||
+        err.response?.data?.non_field_errors?.[0] ||
+        'Invalid username or password';
+      show(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -31,12 +35,14 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => {}} />
+      )}
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-center text-slate-900 mb-6">
           Welcome to SmashUp
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <Alert type="error" message={error} />}
           <div>
             <label className="block text-sm font-medium text-slate-700">
               Username

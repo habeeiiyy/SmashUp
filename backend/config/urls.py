@@ -54,5 +54,6 @@ urlpatterns += [
     re_path(r'^static/(?P<path>.*)$', serve, {
         'document_root': settings.STATIC_ROOT,
     }),
-    re_path(r'^.*$', react_app),
+    # Only serve React for non-admin, non-API, non-static routes
+    re_path(r'^(?!admin/|api/|static/|media/).*$', react_app),
 ]

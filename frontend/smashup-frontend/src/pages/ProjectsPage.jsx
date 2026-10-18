@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { projectsAPI, projectMembersAPI } from '../api';
-import { Alert, Loading } from '../components';
+import { Loading, useToast, Toast } from '../components';
 
 export const ProjectsPage = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [newProject, setNewProject] = useState({ name: '', description: '' });
   const [creating, setCreating] = useState(false);
+  const { toast, show } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export const ProjectsPage = () => {
       const response = await projectsAPI.list();
       setProjects(response.data.results || response.data);
     } catch (err) {
-      setError('Failed to load projects');
+      show('Failed to load projects', 'error');
     } finally {
       setLoading(false);
     }
@@ -29,13 +29,14 @@ export const ProjectsPage = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     setCreating(true);
-    setError(null);
     try {
       await projectsAPI.create(newProject);
       setNewProject({ name: '', description: '' });
+      show('Project created successfully', 'success');
       loadProjects();
     } catch (err) {
-      setError('Failed to create project');
+      const msg = err.response?.data?.detail || 'Failed to create project';
+      show(msg, 'error');
     } finally {
       setCreating(false);
     }
@@ -45,14 +46,20 @@ export const ProjectsPage = () => {
 
   return (
     <div className="container mx-auto p-4">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => {}}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-900">My Projects</h1>
         <Link to="/issues" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
           View All Issues
         </Link>
       </div>
-
-      {error && <Alert type="error" message={error} />}
 
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Create New Project</h2>
@@ -117,7 +124,7 @@ export const ProjectsPage = () => {
                 </p>
               )}
               <div className="mt-4 flex justify-between items-center">
-                <span className="text-xs text-slate-400">Owner: You</span>
+                <span className="text-xs text-slate-400">Owner</span>
                 <span className="text-xs text-slate-400">
                   {project.created_at?.slice(0, 10) || ''}
                 </span>
@@ -130,39 +137,41 @@ export const ProjectsPage = () => {
   );
 };
 
-export const ProjectDetailPage = ({ params }) => {
+export const ProjectDetailPage = () => {
+  const { id } = useParams();
   const [project, setProject] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { show } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     loadProject();
-  }, [params.id]);
+  }, [id]);
 
   const loadProject = async () => {
     try {
-      const [projResp, membersResp] = await Promise.all([
-        projectsAPI.get(params.id),
-        projectMembersAPI.list(),
-      ]);
+      const projResp = await projectsAPI.get(id);
       setProject(projResp.data);
-      setMembers(
-        membersResp.data.results?.filter(
-          (m) => m.project === parseInt(params.id)
-        ) || membersResp.data.filter(
-          (m) => m.project === parseInt(params.id)
-        ) || []
+
+      // Get all members and filter for this project
+      const membersResp = await projectMembersAPI.list();
+      const allMembers = membersResp.data.results || membersResp.data;
+      const projectMembers = allMembers.filter(
+        (m) => m.project === parseInt(id) || m.project === id
       );
+      setMembers(projectMembers);
     } catch (err) {
-      setError('Failed to load project');
+      show('Failed to load project details', 'error');
+      navigate('/projects');
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) return <Loading />;
+
+  if (!project) return <div className="text-center py-10">Project not found.</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -171,31 +180,29 @@ export const ProjectDetailPage = ({ params }) => {
           ← Back to Projects
         </Link>
         <button
-          onClick={() => navigate(`/issues?project=${params.id}`)}
+          onClick={() => navigate(`/issues?project=${project.id}`)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
         >
           View Issues
         </button>
       </div>
 
-      {error && <Alert type="error" message={error} />}
-
       <div className="bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-slate-900 mb-2">
-          {project?.name}
+          {project.name}
         </h1>
-        {project?.description && (
+        {project.description && (
           <p className="text-slate-600 mb-6">{project.description}</p>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-50 p-4 rounded">
             <p className="text-xs text-slate-500 uppercase">Owner</p>
-            <p className="font-medium">{project?.owner || 'You'}</p>
+            <p className="font-medium">{project.owner || 'You'}</p>
           </div>
           <div className="bg-slate-50 p-4 rounded">
             <p className="text-xs text-slate-500 uppercase">Created</p>
             <p className="font-medium">
-              {project?.created_at?.slice(0, 10) || ''}
+              {project.created_at?.slice(0, 10) || ''}
             </p>
           </div>
         </div>
@@ -207,7 +214,7 @@ export const ProjectDetailPage = ({ params }) => {
             <ul className="space-y-2">
               {members.map((m) => (
                 <li key={m.id} className="flex justify-between items-center bg-slate-50 p-3 rounded">
-                  <span>{m.user?.username || 'Unknown'}</span>
+                  <span>{m.user?.username || m.user || 'Unknown'}</span>
                   <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded">
                     {m.role}
                   </span>
