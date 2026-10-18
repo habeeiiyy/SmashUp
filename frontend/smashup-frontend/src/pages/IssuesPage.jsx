@@ -327,78 +327,59 @@ export const IssueDetailPage = () => {
           <h3 className="text-sm font-semibold text-slate-500 uppercase mb-2">Description</h3>
           <p className="text-slate-700 whitespace-pre-wrap">{issue.description}</p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <button
-              onClick={() => handleStatusChange('OPEN')}
-              className={`w-full py-2 rounded border ${issue.status === 'OPEN' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
-            >
-              Open
-            </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Status
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              {['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED'].map(
+                (status) => {
+                  const isActive = issue.status === status;
+                  const config = {
+                    OPEN: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', active: 'bg-blue-100 border-blue-400 text-blue-700' },
+                    IN_PROGRESS: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', active: 'bg-indigo-100 border-indigo-400 text-indigo-700' },
+                    IN_REVIEW: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', active: 'bg-purple-100 border-purple-400 text-purple-700' },
+                    RESOLVED: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', active: 'bg-green-100 border-green-400 text-green-700' },
+                    CLOSED: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', active: 'bg-slate-100 border-slate-400 text-slate-700' },
+                  }[status];
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => handleStatusChange(status)}
+                      className={`w-full py-2.5 rounded border text-sm font-medium transition ${isActive ? config.active : `${config.bg} ${config.text} ${config.border}`}`}
+                    >
+                      {status.replace('_', ' ')}
+                    </button>
+                  );
+                }
+              )}
+            </div>
           </div>
-          <div>
-            <button
-              onClick={() => handleStatusChange('IN_PROGRESS')}
-              className={`w-full py-2 rounded border ${issue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700 border-blue-400' : 'bg-white text-slate-600 border-slate-300'}`}
-            >
-              In Progress
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handleStatusChange('IN_REVIEW')}
-              className="w-full py-2 rounded border bg-white text-slate-600 border-slate-300"
-            >
-              In Review
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handleStatusChange('RESOLVED')}
-              className={`w-full py-2 rounded border ${issue.status === 'RESOLVED' ? 'bg-green-100 text-green-700 border-green-400' : 'bg-white text-slate-600 border-slate-300'}`}
-            >
-              Resolved
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handleStatusChange('CLOSED')}
-              className="w-full py-2 rounded border bg-white text-slate-600 border-slate-300"
-            >
-              Closed
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handlePriorityChange('LOW')}
-              className="w-full py-2 rounded border bg-white text-slate-600 border-slate-300"
-            >
-              Low
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handlePriorityChange('MEDIUM')}
-              className={`w-full py-2 rounded border ${issue.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-400' : 'bg-white text-slate-600 border-slate-300'}`}
-            >
-              Medium
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handlePriorityChange('HIGH')}
-              className={`w-full py-2 rounded border ${issue.priority === 'HIGH' ? 'bg-red-100 text-red-700 border-red-400' : 'bg-white text-slate-600 border-slate-300'}`}
-            >
-              High
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => handlePriorityChange('CRITICAL')}
-              className="w-full py-2 rounded border bg-white text-slate-600 border-slate-300"
-            >
-              Critical
-            </button>
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Priority
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((priority) => {
+                const isActive = issue.priority === priority;
+                const config = {
+                  LOW: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', active: 'bg-green-100 border-green-400 text-green-700' },
+                  MEDIUM: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', active: 'bg-yellow-100 border-yellow-400 text-yellow-700' },
+                  HIGH: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', active: 'bg-orange-100 border-orange-400 text-orange-700' },
+                  CRITICAL: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', active: 'bg-red-100 border-red-400 text-red-700' },
+                }[priority];
+                return (
+                  <button
+                    key={priority}
+                    onClick={() => handlePriorityChange(priority)}
+                    className={`w-full py-2.5 rounded border text-sm font-medium transition ${isActive ? config.active : `${config.bg} ${config.text} ${config.border}`}`}
+                  >
+                    {priority}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

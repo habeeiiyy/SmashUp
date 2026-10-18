@@ -49,46 +49,51 @@ export const Loading = () => (
 export const Toast = ({ message, type = 'error', onClose }) => {
   const colors = {
     error: {
-      bg: 'bg-red-500',
-      text: 'text-white',
-      border: 'border-red-400',
-      icon: 'text-red-400',
+      bg: 'bg-red-50',
+      text: 'text-red-700',
+      border: 'border-red-200',
+      icon: 'text-red-500',
+      title: 'text-red-800',
     },
     success: {
-      bg: 'bg-green-500',
-      text: 'text-white',
-      border: 'border-green-400',
-      icon: 'text-green-400',
+      bg: 'bg-green-50',
+      text: 'text-green-700',
+      border: 'border-green-200',
+      icon: 'text-green-500',
+      title: 'text-green-800',
     },
     info: {
-      bg: 'bg-blue-500',
-      text: 'text-white',
-      border: 'border-blue-400',
-      icon: 'text-blue-400',
+      bg: 'bg-slate-50',
+      text: 'text-slate-700',
+      border: 'border-slate-200',
+      icon: 'text-slate-500',
+      title: 'text-slate-800',
     },
   };
   const c = colors[type];
 
   return (
     <div
-      className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[70] ${c.bg} ${c.border} ${c.text} px-8 py-6 rounded-xl shadow-2xl min-w-[400px] text-center border`}
+      className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[70] ${c.bg} ${c.border} ${c.text} px-6 py-4 rounded-lg shadow-lg min-w-[360px] text-left border`}
       role="alert"
     >
-      <div className="flex justify-center items-center gap-3 mb-4">
-        <AlertCircle className="w-6 h-6" />
-        <h3 className="text-lg font-bold">
-          {type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Info'}
-        </h3>
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 ${c.icon}" />
+          <h3 className="text-sm font-bold ${c.title}">
+            {type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Info'}
+          </h3>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="opacity-50 hover:opacity-100"
+          >
+            ✕
+          </button>
+        )}
       </div>
       <p className="text-sm leading-relaxed">{message}</p>
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="mt-6 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded text-sm transition"
-        >
-          Dismiss
-        </button>
-      )}
     </div>
   );
 };
