@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
-import { Loading, useToast, Toast, GlassCard, GradientButton, InputModern, BtnOutline } from '../components';
+import { Card, Button, Input, Toast, useFlash } from '../components';
 
 export const RegisterPage = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +11,7 @@ export const RegisterPage = () => {
     password2: '',
   });
   const [loading, setLoading] = useState(false);
-  const { toast, show } = useToast();
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -86,29 +86,24 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-dark-900 px-4">
-      <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-pink-600/15 blur-[140px] rounded-full"></div>
-      <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-blue-600/10 blur-[100px] rounded-full"></div>
-
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-
-      <div className="relative z-10 w-full max-w-md">
-        <GlassCard hoverable={false} className="p-8">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-[2rem] bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-glow-purple">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Create account</h1>
-            <p className="text-white/50 text-sm mt-2">Join SmashUp and start tracking issues</p>
+    <div className="min-h-screen flex items-center justify-center bg-github-bg px-4 py-12">
+      <div className="w-full max-w-md">
+        <Card className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-github-purple font-bold text-lg">Smash</span>
+            <span className="text-github-orange font-bold text-lg">Up</span>
           </div>
+          <h1 className="text-lg font-medium text-github-text mb-1">Create account</h1>
+          <p className="text-github-secondaryText text-sm">Join SmashUp and start tracking issues</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Username</label>
-              <InputModern
+          {toasts.map((t) => (
+            <Toast key={t.id} toast={t} onClose={hide} />
+          ))}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="form-group">
+              <label className="label-github">Username</label>
+              <Input
                 type="text"
                 name="username"
                 value={formData.username}
@@ -117,9 +112,9 @@ export const RegisterPage = () => {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Email</label>
-              <InputModern
+            <div className="form-group">
+              <label className="label-github">Email</label>
+              <Input
                 type="email"
                 name="email"
                 value={formData.email}
@@ -127,9 +122,9 @@ export const RegisterPage = () => {
                 placeholder="john@example.com"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
-              <InputModern
+            <div className="form-group">
+              <label className="label-github">Password</label>
+              <Input
                 type="password"
                 name="password1"
                 value={formData.password1}
@@ -138,9 +133,9 @@ export const RegisterPage = () => {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Confirm password</label>
-              <InputModern
+            <div className="form-group">
+              <label className="label-github">Confirm password</label>
+              <Input
                 type="password"
                 name="password2"
                 value={formData.password2}
@@ -149,18 +144,22 @@ export const RegisterPage = () => {
                 required
               />
             </div>
-            <GradientButton type="submit" disabled={loading} className="w-full">
+            <Button type="submit" variant="primary" disabled={loading} className="w-full">
               {loading ? 'Creating account...' : 'Create account'}
-            </GradientButton>
+            </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <p className="text-white/50 text-sm">Already have an account?</p>
-            <BtnOutline onClick={() => navigate('/login')} className="mt-2 inline-block text-sm">
+          <div className="mt-6 pt-4 border-t border-github-border text-center">
+            <p className="text-github-secondaryText text-sm">Already have an account?</p>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/login')}
+              className="mt-2 inline-block w-auto"
+            >
               Sign in
-            </BtnOutline>
+            </Button>
           </div>
-        </GlassCard>
+        </Card>
       </div>
     </div>
   );

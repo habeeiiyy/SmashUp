@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { issuesAPI } from '../api';
-import { Loading, useToast, Toast, GlassCard, GradientButton, InputModern, BtnOutline } from '../components';
+import { Card, Button, Input, Toast, useFlash, Badge } from '../components';
+import { StatusBadge, PriorityBadge } from '../components';
 
 export const ProfilePage = () => {
   const [user, setUser] = useState(null);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast, show } = useToast();
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,64 +36,59 @@ export const ProfilePage = () => {
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <div className="text-github-secondaryText text-sm p-8 text-center">Loading...</div>;
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+    <div className="container mx-auto px-4 py-8">
+      {toasts.map((t) => (
+        <Toast key={t.id} toast={t} onClose={hide} />
+      ))}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight mb-1">Profile</h1>
-          <p className="text-white/50 text-sm">Your account and activity</p>
+          <h1 className="text-lg font-medium text-github-text mb-1">Profile</h1>
+          <p className="text-github-secondaryText text-sm">Your account and activity</p>
         </div>
-        <Link to="/" className="btn-outline px-5 py-3 text-sm">
-          ← Back to Home
+        <Link to="/" className="btn-secondary px-3 py-1.5 text-sm">
+          ← Back to home
         </Link>
       </div>
 
-      <GlassCard className="mb-8">
-        <div className="flex items-center gap-6 mb-8">
-          <div className="w-20 h-20 rounded-[3rem] bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-bold shadow-glow-purple">
+      <Card>
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-full bg-github-secondary flex items-center justify-center text-[24px] text-github-secondaryText">
             {user?.username?.charAt(0)?.toUpperCase() || 'U'}
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white">{user?.username}</h2>
-            <p className="text-white/50 text-sm">{user?.email}</p>
+            <h2 className="text-lg font-medium text-github-text">{user?.username}</h2>
+            <p className="text-github-secondaryText text-sm">{user?.email}</p>
           </div>
         </div>
 
-        <div className="pt-6 border-t border-white/10">
-          <h3 className="text-lg font-bold text-white mb-4">Your Issues ({issues.length})</h3>
+        <div className="pt-4 border-t border-github-border">
+          <h2 className="text-sm font-medium text-github-secondaryText mb-4">Your issues ({issues.length})</h2>
           {issues.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <p className="text-white/50 text-sm">No issues created yet.</p>
-            </div>
+            <div className="p-4 text-center text-github-secondaryText text-sm">No issues created yet.</div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {issues.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="glass-card p-5 rounded-[1.5rem] flex items-center justify-between group hover:border-purple-500/30 transition-colors"
-                >
-                  <div>
-                    <Link to={`/issues/${issue.id}`} className="font-medium text-white hover:text-purple-400 transition-colors">
+                <div key={issue.id} className="flex items-center justify-between p-2 rounded-md hover:bg-github-secondary transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Link to={`/issues/${issue.id}`} className="text-github-text hover:text-github-blue transition-colors">
                       {issue.title}
                     </Link>
-                    <p className="text-xs text-white/50 mt-1">{issue.category || 'No category'}</p>
+                    <Badge variant="secondary" className="text-[10px]">{issue.category}</Badge>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <StatusPill status={issue.status} />
-                    <PriorityPill priority={issue.priority} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={issue.status} />
+                    <PriorityBadge priority={issue.priority} />
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 };

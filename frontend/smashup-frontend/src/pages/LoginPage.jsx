@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../api';
-import { Loading, useToast, Toast, GlassCard, GradientButton, InputModern, BtnOutline } from '../components';
+import { Card, Button, Input, Toast, useFlash } from '../components';
 
 export const LoginPage = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
-  const { toast, show } = useToast();
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -36,30 +36,24 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-dark-900 px-4">
-      {/* Decorative gradient blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-pink-600/15 blur-[140px] rounded-full"></div>
-      <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-blue-600/10 blur-[100px] rounded-full"></div>
-
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
-
-      <div className="relative z-10 w-full max-w-md">
-        <GlassCard hoverable={false} className="p-8">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-[2rem] bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-glow-purple">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Welcome back</h1>
-            <p className="text-white/50 text-sm mt-2">Sign in to your SmashUp account</p>
+    <div className="min-h-screen flex items-center justify-center bg-github-bg px-4 py-12">
+      <div className="w-full max-w-md">
+        <Card className="p-6 mb-6">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-github-purple font-bold text-lg">Smash</span>
+            <span className="text-github-orange font-bold text-lg">Up</span>
           </div>
+          <h1 className="text-lg font-medium text-github-text mb-1">Sign in</h1>
+          <p className="text-github-secondaryText text-sm">Sign in to your SmashUp account</p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Username</label>
-              <InputModern
+          {toasts.map((t) => (
+            <Toast key={t.id} toast={t} onClose={hide} />
+          ))}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="form-group">
+              <label className="label-github">Username</label>
+              <Input
                 type="text"
                 name="username"
                 value={formData.username}
@@ -68,9 +62,9 @@ export const LoginPage = () => {
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
-              <InputModern
+            <div className="form-group">
+              <label className="label-github">Password</label>
+              <Input
                 type="password"
                 name="password"
                 value={formData.password}
@@ -79,25 +73,21 @@ export const LoginPage = () => {
                 required
               />
             </div>
-            <GradientButton
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
+            <Button type="submit" variant="primary" disabled={loading} className="w-full">
               {loading ? 'Signing in...' : 'Sign in'}
-            </GradientButton>
+            </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <p className="text-white/50 text-sm">Don't have an account?</p>
+          <div className="mt-6 pt-4 border-t border-github-border text-center">
+            <p className="text-github-secondaryText text-sm">Don't have an account?</p>
             <a
               href="/register"
-              className="mt-2 inline-block text-purple-400 hover:text-purple-300 font-medium transition-colors"
+              className="text-github-blue hover:underline font-medium"
             >
-              Create an account →
+              Create an account
             </a>
           </div>
-        </GlassCard>
+        </Card>
       </div>
     </div>
   );

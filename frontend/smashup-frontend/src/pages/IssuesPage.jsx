@@ -1,7 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link, useParams } from 'react-router-dom';
 import { issuesAPI, projectsAPI } from '../api';
-import { Loading, useToast, Toast, GlassCard, GradientButton, InputModern, SelectModern, Badge, StatusPill, PriorityPill } from '../components';
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Toast,
+  useFlash,
+  Badge,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  StatusBadge,
+  PriorityBadge,
+} from '../components';
 
 export const IssuesPage = () => {
   const [issues, setIssues] = useState([]);
@@ -14,7 +30,7 @@ export const IssuesPage = () => {
     project: '',
   });
   const [creating, setCreating] = useState(false);
-  const { toast, show } = useToast();
+  const { toasts, show } = useFlash();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -72,144 +88,140 @@ export const IssuesPage = () => {
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <div className="text-github-secondaryText text-sm p-8 text-center">Loading...</div>;
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+    <div className="container mx-auto px-4 py-8">
+      {toasts.map((t) => (
+        <Toast key={t.id} toast={t} onClose={hide} />
+      ))}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight mb-1">Issues</h1>
-          <p className="text-white/50 text-sm">Track and manage your team's issues</p>
+          <h1 className="text-lg font-medium text-github-text mb-1">Issues</h1>
+          <p className="text-github-secondaryText text-sm">Track and manage your team's issues</p>
         </div>
-        <GradientButton
+        <Button
           onClick={() => {
             document.getElementById('create-issue')?.classList.remove('hidden');
           }}
-          className="px-6 py-3 text-sm"
+          variant="primary"
+          className="px-4 py-2 text-sm"
         >
-          + New Issue
-        </GradientButton>
+          New issue
+        </Button>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 glass-card">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Title</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Category</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Priority</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-white/40 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+              <Thead>
+                <Tr>
+                  <Th className="w-1/3">Title</Th>
+                  <Th className="w-1/6">Category</Th>
+                  <Th className="w-1/6">Status</Th>
+                  <Th className="w-1/6">Priority</Th>
+                  <Th className="w-1/6">Actions</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
                 {issues.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-white/40">
+                  <Tr>
+                    <Td colSpan={5} className="text-center text-github-secondaryText text-sm py-8">
                       No issues found.
-                    </td>
-                  </tr>
+                    </Td>
+                  </Tr>
                 ) : (
                   issues.map((issue) => (
-                    <tr
-                      key={issue.id}
-                      className="border-b border-white/5 hover:bg-white/5 transition-colors group"
-                    >
-                      <td className="px-4 py-4">
-                        <Link to={`/issues/${issue.id}`} className="font-medium text-white hover:text-purple-400 transition-colors">
+                    <Tr key={issue.id} className="group">
+                      <Td className="font-medium text-github-text">
+                        <Link to={`/issues/${issue.id}`} className="hover:text-github-blue transition-colors">
                           {issue.title}
                         </Link>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="text-xs bg-white/5 text-white/60 px-2 py-1 rounded-[0.6rem]">
-                          {issue.category}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <StatusPill status={issue.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <PriorityPill priority={issue.priority} />
-                      </td>
-                      <td className="px-4 py-4">
+                      </Td>
+                      <Td>
+                        <span className="text-github-secondaryText text-xs">{issue.category}</span>
+                      </Td>
+                      <Td>
+                        <StatusBadge status={issue.status} />
+                      </Td>
+                      <Td>
+                        <PriorityBadge priority={issue.priority} />
+                      </Td>
+                      <Td>
                         <button
                           onClick={() => navigate(`/issues/${issue.id}`)}
-                          className="text-xs text-purple-400 hover:text-purple-300 font-medium"
+                          className="text-github-blue text-xs hover:underline"
                         >
                           Open
                         </button>
-                      </td>
-                    </tr>
+                      </Td>
+                    </Tr>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </Tbody>
+            </Table>
+            </div>
+          </Card>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-lg font-bold text-white mb-6">Create Issue</h2>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Project</label>
-              <SelectModern
-                name="project"
-                value={newIssue.project}
-                onChange={(e) => setNewIssue({ ...newIssue, project: e.target.value })}
-              >
-                <option value="">Select a project</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </SelectModern>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Title</label>
-              <InputModern
-                type="text"
-                name="title"
-                value={newIssue.title}
-                onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
-                placeholder="Issue title"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Description</label>
-              <InputModern
-                type="text"
-                name="description"
-                value={newIssue.description}
-                onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
-                placeholder="Describe the issue"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Category</label>
-              <InputModern
-                type="text"
-                name="category"
-                value={newIssue.category}
-                onChange={(e) => setNewIssue({ ...newIssue, category: e.target.value })}
-                placeholder="e.g. Bug, Feature"
-              />
-            </div>
-            <GradientButton
-              type="submit"
-              disabled={creating}
-              className="w-full"
-            >
-              {creating ? 'Creating...' : 'Create Issue'}
-            </GradientButton>
-          </form>
+        <div id="create-issue" className="hidden">
+          <Card>
+            <h2 className="text-sm font-medium text-github-secondaryText mb-4">New issue</h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="form-group">
+                <label className="label-github">Project</label>
+                <Select
+                  name="project"
+                  value={newIssue.project}
+                  onChange={(e) => setNewIssue({ ...newIssue, project: e.target.value })}
+                >
+                  <option value="">Select a project</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="form-group">
+                <label className="label-github">Title</label>
+                <Input
+                  type="text"
+                  name="title"
+                  value={newIssue.title}
+                  onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
+                  placeholder="Issue title"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="label-github">Description</label>
+                <Input
+                  type="text"
+                  name="description"
+                  value={newIssue.description}
+                  onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
+                  placeholder="Describe the issue"
+                />
+              </div>
+              <div className="form-group">
+                <label className="label-github">Category</label>
+                <Input
+                  type="text"
+                  name="category"
+                  value={newIssue.category}
+                  onChange={(e) => setNewIssue({ ...newIssue, category: e.target.value })}
+                  placeholder="e.g. Bug, Feature"
+                />
+              </div>
+              <Button type="submit" variant="primary" disabled={creating}>
+                {creating ? 'Creating...' : 'Create issue'}
+              </Button>
+            </form>
+          </Card>
         </div>
       </div>
     </div>
@@ -220,7 +232,7 @@ export const IssueDetailPage = () => {
   const { id } = useParams();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { show } = useToast();
+  const { show, hide } = useFlash();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -261,104 +273,128 @@ export const IssueDetailPage = () => {
     }
   };
 
-  if (loading) return <Loading />;
+  if (loading) return <div className="text-github-secondaryText text-sm p-8 text-center">Loading...</div>;
 
-  if (!issue) return <div className="text-center py-20 text-white/50">Issue not found.</div>;
+  if (!issue) return <div className="text-github-secondaryText text-sm p-8 text-center">Issue not found.</div>;
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+    <div className="container mx-auto px-4 py-8">
+      {toasts.map((t) => (
+        <Toast key={t.id} toast={t} onClose={hide} />
+      ))}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="max-w-2xl">
-          <div className="flex items-center gap-3 mb-2">
-            <Badge variant="purple">Issue</Badge>
-            <span className="text-xs text-white/40">#{issue.id}</span>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="secondary">Issue</Badge>
+            <span className="text-xs text-github-secondaryText">#{issue.id}</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight mb-2">{issue.title}</h1>
-          <Badge variant="slate">{issue.category}</Badge>
+          <h1 className="text-lg font-medium text-github-text">{issue.title}</h1>
+          <Badge variant="secondary">{issue.category}</Badge>
         </div>
-        <Link to="/issues" className="btn-outline px-5 py-3 text-sm">
+        <Link to="/issues" className="btn-secondary px-3 py-1.5 text-sm">
           ← Back
         </Link>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 glass-card">
-          <div className="flex items-center gap-3 mb-6">
-            <StatusPill status={issue.status} />
-            <PriorityPill priority={issue.priority} />
-          </div>
-          <div className="mb-8">
-            <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3">Description</h3>
-            <p className="text-white/90 text-lg leading-relaxed whitespace-pre-wrap">{issue.description}</p>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <div className="flex items-center gap-2 mb-6">
+              <StatusBadge status={issue.status} />
+              <PriorityBadge priority={issue.priority} />
+            </div>
+            <div className="mb-6">
+              <h2 className="text-xs font-medium text-github-secondaryText mb-2">Description</h2>
+              <p className="text-github-text text-sm leading-relaxed whitespace-pre-wrap">{issue.description}</p>
+            </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-1">Status</h4>
-              <div className="grid grid-cols-2 gap-3">
-                {['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED'].map((status) => {
-                  const isActive = issue.status === status;
-                  const config = {
-                    OPEN: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', active: 'bg-blue-100 border-blue-400 text-blue-700' },
-                    IN_PROGRESS: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', active: 'bg-indigo-100 border-indigo-400 text-indigo-700' },
-                    IN_REVIEW: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', active: 'bg-purple-100 border-purple-400 text-purple-700' },
-                    RESOLVED: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', active: 'bg-green-100 border-green-400 text-green-700' },
-                    CLOSED: { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', active: 'bg-slate-100 border-slate-400 text-slate-700' },
-                  }[status];
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => handleStatusChange(status)}
-                      className={`w-full py-2.5 rounded-[0.9rem] border text-sm font-medium transition ${isActive ? config.active : `${config.bg} ${config.text} ${config.border}`}`}
-                    >
-                      {status.replace('_', ' ')}
-                    </button>
-                  );
-                })}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h2 className="text-xs font-medium text-github-secondaryText mb-2">Status</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  {['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED'].map((status) => {
+                    const isActive = issue.status === status;
+                    const config = {
+                      OPEN: { label: 'Open', color: 'blue' },
+                      IN_PROGRESS: { label: 'In progress', color: 'purple' },
+                      IN_REVIEW: { label: 'In review', color: 'purple' },
+                      RESOLVED: { label: 'Resolved', color: 'green' },
+                      CLOSED: { label: 'Closed', color: 'secondary' },
+                    }[status];
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => handleStatusChange(status)}
+                        className={`px-3 py-2 text-xs border rounded-md text-center transition-colors ${
+                          isActive
+                            ? config.color === 'blue'
+                              ? 'bg-github-blue text-white border-github-blue'
+                              : config.color === 'purple'
+                              ? 'bg-github-purple text-white border-github-purple'
+                              : config.color === 'green'
+                              ? 'bg-github-green text-white border-github-green'
+                              : 'bg-github-secondary text-github-secondaryText border-github-border'
+                            : 'bg-transparent text-github-secondaryText border-github-border hover:bg-github-secondary'
+                        }`}
+                      >
+                        {config.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xs font-medium text-github-secondaryText mb-2">Priority</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((priority) => {
+                    const isActive = issue.priority === priority;
+                    const config = {
+                      LOW: { label: 'Low', color: 'green' },
+                      MEDIUM: { label: 'Medium', color: 'blue' },
+                      HIGH: { label: 'High', color: 'orange' },
+                      CRITICAL: { label: 'Critical', color: 'red' },
+                    }[priority];
+                    return (
+                      <button
+                        key={priority}
+                        onClick={() => handlePriorityChange(priority)}
+                        className={`px-3 py-2 text-xs border rounded-md text-center transition-colors ${
+                          isActive
+                            ? config.color === 'green'
+                              ? 'bg-github-green text-white border-github-green'
+                              : config.color === 'blue'
+                              ? 'bg-github-blue text-white border-github-blue'
+                              : config.color === 'orange'
+                              ? 'bg-github-orange text-white border-github-orange'
+                              : 'bg-github-red text-white border-github-red'
+                            : 'bg-transparent text-github-secondaryText border-github-border hover:bg-github-secondary'
+                        }`}
+                      >
+                        {config.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-1">Priority</h4>
-              <div className="grid grid-cols-2 gap-3">
-                {['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((priority) => {
-                  const isActive = issue.priority === priority;
-                  const config = {
-                    LOW: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', active: 'bg-green-100 border-green-400 text-green-700' },
-                    MEDIUM: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', active: 'bg-yellow-100 border-yellow-400 text-yellow-700' },
-                    HIGH: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', active: 'bg-orange-100 border-orange-400 text-orange-700' },
-                    CRITICAL: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', active: 'bg-red-100 border-red-400 text-red-700' },
-                  }[priority];
-                  return (
-                    <button
-                      key={priority}
-                      onClick={() => handlePriorityChange(priority)}
-                      className={`w-full py-2.5 rounded-[0.9rem] border text-sm font-medium transition ${isActive ? config.active : `${config.bg} ${config.text} ${config.border}`}`}
-                    >
-                      {priority}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          </Card>
         </div>
 
-        <div className="glass-card p-6 sticky top-24">
-          <h3 className="text-lg font-bold text-white mb-6">Issue #{issue.id}</h3>
-          <div className="space-y-4">
-            <div className="glass-card p-4 rounded-[1.2rem]">
-              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Category</p>
-              <p className="text-white font-medium">{issue.category}</p>
+        <div className="lg:col-span-1">
+          <Card>
+            <h2 className="text-sm font-medium text-github-secondaryText mb-4">Issue #{issue.id}</h2>
+            <div className="space-y-4">
+              <div className="p-2 rounded-md bg-github-secondary">
+                <p className="text-xs font-medium text-github-secondaryText mb-1">Category</p>
+                <p className="text-github-text text-sm">{issue.category}</p>
+              </div>
+              <div className="p-2 rounded-md bg-github-secondary">
+                <p className="text-xs font-medium text-github-secondaryText mb-1">Created</p>
+                <p className="text-github-text text-sm">{issue.created_at?.slice(0, 10) || ''}</p>
+              </div>
             </div>
-            <div className="glass-card p-4 rounded-[1.2rem]">
-              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Created</p>
-              <p className="text-white font-medium">{issue.created_at?.slice(0, 10) || ''}</p>
-            </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
