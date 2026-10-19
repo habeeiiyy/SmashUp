@@ -1,9 +1,17 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from .models import Project,ProjectMember
+from .models import Project, ProjectMember, ProjectJoinRequest
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from .services import create_project,add_member,transfer_ownership,remove_member
+from .services import (
+    create_project,
+    add_member,
+    transfer_ownership,
+    remove_member,
+    request_to_join_project,
+    accept_join_request,
+    reject_join_request,
+)
 
 User=get_user_model()
 
@@ -538,3 +546,143 @@ class RemoveMemberTests(TestCase):
                 user=self.outsider,
                 removed_by=self.owner,
             )
+
+
+class ProjectCodeAndJoinRequestTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username="code_owner",
+            password="Password@123",
+        )
+        self.applicant = User.objects.create_user(
+            username="applicant",
+            password="Password@123",
+        )
+        self.outsider = User.objects.create_user(
+            username="outsider_user",
+            password="Password@123",
+        )
+        self.project = create_project(
+            name="Joinable Project",
+            description="Testing codes and requests",
+            owner=self.owner,
+        )
+
+    def test_project_has_unique_formatted_code(self):
+        self.assertTrue(self.project.code.startswith("PRJ-"))
+        parts = self.project.code.split("-")
+        self.assertEqual(len(parts), 4)
+        for part in parts[1:]:
+            self.assertEqual(len(part), 4)
+
+    def test_user_can_request_to_join_project_by_code(self):
+        req = request_to_join_project(
+            code=self.project.code,
+            user=self.applicant,
+            message="Hi, I want to contribute!",
+        )
+        self.assertEqual(req.project, self.project)
+        self.assertEqual(req.user, self.applicant)
+        self.assertEqual(req.status, ProjectJoinRequest.Status.PENDING)
+        self.assertEqual(req.message, "Hi, I want to contribute!")
+
+    def test_duplicate_pending_request_is_rejected(self):
+        request_to_join_project(
+            code=self.project.code,
+            user=self.applicant,
+            message="First request",
+        )
+        with self.assertRaises(ValidationError):
+            request_to_join_project(
+                code=self.project.code,
+                user=self.applicant,
+                message="Second request",
+            )
+
+    def test_existing_member_cannot_request_to_join(self):
+        with self.assertRaises(ValidationError):
+            request_to_join_project(
+                code=self.project.code,
+                user=self.owner,
+                message="I'm already the owner",
+            )
+
+    def test_owner_can_accept_join_request(self):
+        req = request_to_join_project(
+            code=self.project.code,
+            user=self.applicant,
+        )
+        accepted_req = accept_join_request(
+            join_request_id=req.id,
+            accepted_by=self.owner,
+            role=ProjectMember.Role.DEVELOPER,
+        )
+        self.assertEqual(accepted_req.status, ProjectJoinRequest.Status.ACCEPTED)
+        self.assertTrue(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.applicant,
+                role=ProjectMember.Role.DEVELOPER,
+            ).exists()
+        )
+
+    def test_owner_can_reject_join_request(self):
+        req = request_to_join_project(
+            code=self.project.code,
+            user=self.applicant,
+        )
+        rejected_req = reject_join_request(
+            join_request_id=req.id,
+            rejected_by=self.owner,
+        )
+        self.assertEqual(rejected_req.status, ProjectJoinRequest.Status.REJECTED)
+        self.assertFalse(
+            ProjectMember.objects.filter(
+                project=self.project,
+                user=self.applicant,
+            ).exists()
+        )
+
+    def test_unauthorized_user_cannot_accept_join_request(self):
+        req = request_to_join_project(
+            code=self.project.code,
+            user=self.applicant,
+        )
+        with self.assertRaises(ValidationError):
+            accept_join_request(
+                join_request_id=req.id,
+                accepted_by=self.outsider,
+                role=ProjectMember.Role.DEVELOPER,
+            )
+
+    def test_email_masking_for_other_users(self):
+        from rest_framework.test import APIRequestFactory
+        from .serializers import ProjectMemberUserSerializer, mask_email
+
+        self.applicant.email = "john.doe@company.com"
+        self.applicant.save()
+
+        # Direct mask_email test
+        self.assertEqual(mask_email("john.doe@company.com"), "j***@company.com")
+
+        factory = APIRequestFactory()
+
+        # Request by outsider -> masked
+        req_outsider = factory.get("/")
+        req_outsider.user = self.outsider
+        serializer_other = ProjectMemberUserSerializer(self.applicant, context={"request": req_outsider})
+        self.assertEqual(serializer_other.data["email"], "j***@company.com")
+        self.assertFalse(serializer_other.data["is_self"])
+
+        # Request by self -> unmasked
+        req_self = factory.get("/")
+        req_self.user = self.applicant
+        serializer_self = ProjectMemberUserSerializer(self.applicant, context={"request": req_self})
+        self.assertEqual(serializer_self.data["email"], "john.doe@company.com")
+        self.assertTrue(serializer_self.data["is_self"])
+
+    def test_project_serializer_includes_code(self):
+        from .serializers import ProjectSerializer
+
+        serializer = ProjectSerializer(self.project)
+        self.assertEqual(serializer.data["code"], self.project.code)

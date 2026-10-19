@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .forms import RegisterationForm
+from .models import Profile
 
 User = get_user_model()
 
@@ -68,13 +69,32 @@ def logout_api(request):
     return Response({'detail': 'Logged out successfully'})
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'PATCH'])
 def user_profile_api(request):
     user = request.user
-    profile = getattr(user, 'profile', None)
+    if not user or not user.is_authenticated:
+        return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+
+    if request.method in ['PUT', 'PATCH']:
+        bio = request.data.get('bio', None)
+        position = request.data.get('position', None)
+        company = request.data.get('company', None)
+
+        if bio is not None:
+            profile.bio = bio
+        if position is not None:
+            profile.position = position
+        if company is not None:
+            profile.company = company
+        profile.save()
+
     return Response({
         'id': user.id,
         'username': user.username,
         'email': user.email,
-        'bio': profile.bio if profile else '',
+        'bio': profile.bio,
+        'position': profile.position,
+        'company': profile.company,
     })

@@ -62,6 +62,7 @@ export const authAPI = {
   logout: (refresh) =>
     axios.post(`${API_BASE}/auth/logout/`, { refresh }),
   getProfile: () => api.get('/auth/profile/'),
+  updateProfile: (data) => api.patch('/auth/profile/', data),
 };
 
 export const projectsAPI = {
@@ -70,6 +71,18 @@ export const projectsAPI = {
   get: (id) => api.get(`/projects/${id}/`),
   transferOwnership: (id, newOwnerId) =>
     api.post(`/projects/${id}/transfer_ownership/`, { new_owner: newOwnerId }),
+  lookupCode: (code) =>
+    api.get('/projects/lookup_code/', { params: { code } }),
+  joinByCode: (data) =>
+    api.post('/projects/join_by_code/', data),
+  getJoinRequests: (id) =>
+    api.get(`/projects/${id}/join_requests/`),
+};
+
+export const projectJoinRequestsAPI = {
+  list: (params) => api.get('/project-join-requests/', { params }),
+  accept: (id, data) => api.post(`/project-join-requests/${id}/accept/`, data || {}),
+  reject: (id) => api.post(`/project-join-requests/${id}/reject/`),
 };
 
 export const projectMembersAPI = {

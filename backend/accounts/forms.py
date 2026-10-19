@@ -19,15 +19,29 @@ class RegisterationForm(UserCreationForm):
         return email
 class UpdateProfileForm(forms.ModelForm):
     avatar = forms.ImageField(
+        required=False,
         widget=forms.FileInput(
             attrs={'class': 'form-control-file'}
         )
     )
     bio = forms.CharField(
+        required=False,
         widget=forms.Textarea(
             attrs={'class': 'form-control', 'rows': 5}
         )
     )
+    position = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={'class': 'form-control'}
+        )
+    )
+    company = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={'class': 'form-control'}
+        )
+    )
     class Meta:
         model = Profile
-        fields = ['avatar', 'bio']
+        fields = ['avatar', 'bio', 'position', 'company']

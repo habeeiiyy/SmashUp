@@ -16,11 +16,16 @@ from rest_framework_simplejwt.views import (
 from django.views.generic import TemplateView
 
 from issues.views import IssueViewSet, IssueCommentViewSet, IssueLabelViewSet
-from projects.views import ProjectViewSet, ProjectMemberViewSet
+from projects.views import (
+    ProjectViewSet,
+    ProjectMemberViewSet,
+    ProjectJoinRequestViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"projects", ProjectViewSet)
 router.register(r"project-members", ProjectMemberViewSet)
+router.register(r"project-join-requests", ProjectJoinRequestViewSet)
 router.register(r"issues", IssueViewSet)
 router.register(r"issue-comments", IssueCommentViewSet)
 router.register(r"issue-labels", IssueLabelViewSet)
