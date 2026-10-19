@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { projectsAPI, projectMembersAPI } from '../api';
+import { Mail } from 'lucide-react';
 import {
   Card,
   Button,
@@ -27,7 +28,8 @@ export const ProjectsPage = () => {
       const response = await projectsAPI.list();
       setProjects(response.data.results || response.data);
     } catch (err) {
-      show('Failed to load projects', 'error');
+      const msg = err.response?.data?.detail || 'Failed to load projects';
+      show(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -141,7 +143,7 @@ export const ProjectDetailPage = () => {
   const [project, setProject] = useState(null);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { show } = useFlash();
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -160,7 +162,8 @@ export const ProjectDetailPage = () => {
       );
       setMembers(projectMembers);
     } catch (err) {
-      show('Failed to load project details', 'error');
+      const msg = err.response?.data?.detail || 'Failed to load project details';
+      show(msg, 'error');
       navigate('/projects');
     } finally {
       setLoading(false);
@@ -173,6 +176,9 @@ export const ProjectDetailPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {toasts.map((t) => (
+        <Toast key={t.id} toast={t} onClose={hide} />
+      ))}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2 mb-2">
@@ -204,7 +210,7 @@ export const ProjectDetailPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs font-medium text-github-secondaryText mb-1">Owner</p>
-                <p className="text-github-text text-sm">{project.owner || 'You'}</p>
+                <p className="text-github-text text-sm">{typeof project.owner === 'object' ? (project.owner?.username || 'You') : (project.owner ? (typeof project.owner === 'number' ? `User #${project.owner}` : project.owner) : 'You')}</p>
               </div>
               <div>
                 <p className="text-xs font-medium text-github-secondaryText mb-1">Created</p>
@@ -221,10 +227,10 @@ export const ProjectDetailPage = () => {
               <div className="space-y-2">
                 {members.map((m) => (
                   <div key={m.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-github-secondary transition-colors">
-                    <div className="w-6 h-6 rounded-full bg-github-secondary flex items-center justify-center text-[10px] text-github-secondaryText">
-                      {(m.user?.username || m.user || 'U').charAt(0).toUpperCase()}
+                    <div className="w-6 h-6 rounded-full bg-github-secondary flex items-center justify-center text-[10px] text-github-secondaryText font-medium">
+                      {String(m.user?.username || m.user || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <p className="text-sm text-github-text">{m.user?.username || m.user || 'Unknown'}</p>
+                    <p className="text-sm text-github-text">{m.user?.username || (typeof m.user === 'number' ? `User #${m.user}` : m.user) || 'Unknown'}</p>
                     <span className="ml-auto text-xs text-github-secondaryText">{m.role}</span>
                   </div>
                 ))}

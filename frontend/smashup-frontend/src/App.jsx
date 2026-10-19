@@ -5,25 +5,35 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ProjectsPage, ProjectDetailPage } from './pages/ProjectsPage';
 import { IssuesPage, IssueDetailPage } from './pages/IssuesPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { authAPI } from './api';
 
 const ProtectedLayout = () => {
   const token = localStorage.getItem('access_token');
 
-  if (!token) {
+  if (!token || token === 'undefined' || token === 'null') {
     return <Navigate to="/login" replace />;
   }
 
+  const handleLogout = async () => {
+    const refresh = localStorage.getItem('refresh_token');
+    if (refresh) {
+      try {
+        await authAPI.logout(refresh);
+      } catch {
+        // Ignore logout network errors
+      }
+    }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    window.location.href = '/login';
+  };
+
   return (
     <>
-      <Navbar
-        onLogout={() => {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          localStorage.removeItem('username');
-          localStorage.removeItem('email');
-          window.location.href = '/login';
-        }}
-      />
+      <Navbar onLogout={handleLogout} />
       <Outlet />
     </>
   );

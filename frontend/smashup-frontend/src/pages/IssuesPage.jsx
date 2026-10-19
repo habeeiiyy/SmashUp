@@ -30,13 +30,17 @@ export const IssuesPage = () => {
     project: '',
   });
   const [creating, setCreating] = useState(false);
-  const { toasts, show } = useFlash();
+  const [showCreate, setShowCreate] = useState(false);
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
     loadProjects();
     loadIssues();
+    if (searchParams.get('create')) {
+      setShowCreate(true);
+    }
   }, [searchParams]);
 
   const loadProjects = async () => {
@@ -66,6 +70,10 @@ export const IssuesPage = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!newIssue.project) {
+      show('Please select a project', 'error');
+      return;
+    }
     setCreating(true);
     try {
       await issuesAPI.create({
@@ -74,7 +82,13 @@ export const IssuesPage = () => {
         description: newIssue.description,
         category: newIssue.category || 'General',
       });
-      setNewIssue({ title: '', description: '', category: '', project: '' });
+      setNewIssue({
+        title: '',
+        description: '',
+        category: '',
+        project: searchParams.get('project') || '',
+      });
+      setShowCreate(false);
       show('Issue created successfully', 'success');
       loadIssues();
     } catch (err) {
@@ -102,13 +116,11 @@ export const IssuesPage = () => {
           <p className="text-github-secondaryText text-sm">Track and manage your team's issues</p>
         </div>
         <Button
-          onClick={() => {
-            document.getElementById('create-issue')?.classList.remove('hidden');
-          }}
+          onClick={() => setShowCreate(!showCreate)}
           variant="primary"
           className="px-4 py-2 text-sm"
         >
-          New issue
+          {showCreate ? 'Close form' : 'New issue'}
         </Button>
       </div>
 
@@ -167,62 +179,83 @@ export const IssuesPage = () => {
           </Card>
         </div>
 
-        <div id="create-issue" className="hidden">
-          <Card>
-            <h2 className="text-sm font-medium text-github-secondaryText mb-4">New issue</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="form-group">
-                <label className="label-github">Project</label>
-                <Select
-                  name="project"
-                  value={newIssue.project}
-                  onChange={(e) => setNewIssue({ ...newIssue, project: e.target.value })}
+        {showCreate && (
+          <div className="lg:col-span-1">
+            <Card>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm font-medium text-github-secondaryText">New issue</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="text-xs text-github-secondaryText hover:text-github-text"
                 >
-                  <option value="">Select a project</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
+                  ✕
+                </button>
               </div>
-              <div className="form-group">
-                <label className="label-github">Title</label>
-                <Input
-                  type="text"
-                  name="title"
-                  value={newIssue.title}
-                  onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
-                  placeholder="Issue title"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="label-github">Description</label>
-                <Input
-                  type="text"
-                  name="description"
-                  value={newIssue.description}
-                  onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
-                  placeholder="Describe the issue"
-                />
-              </div>
-              <div className="form-group">
-                <label className="label-github">Category</label>
-                <Input
-                  type="text"
-                  name="category"
-                  value={newIssue.category}
-                  onChange={(e) => setNewIssue({ ...newIssue, category: e.target.value })}
-                  placeholder="e.g. Bug, Feature"
-                />
-              </div>
-              <Button type="submit" variant="primary" disabled={creating}>
-                {creating ? 'Creating...' : 'Create issue'}
-              </Button>
-            </form>
-          </Card>
-        </div>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="form-group">
+                  <label className="label-github">Project *</label>
+                  <Select
+                    name="project"
+                    value={newIssue.project}
+                    onChange={(e) => setNewIssue({ ...newIssue, project: e.target.value })}
+                    required
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="form-group">
+                  <label className="label-github">Title *</label>
+                  <Input
+                    type="text"
+                    name="title"
+                    value={newIssue.title}
+                    onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
+                    placeholder="Issue title"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="label-github">Description</label>
+                  <Input
+                    type="text"
+                    name="description"
+                    value={newIssue.description}
+                    onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
+                    placeholder="Describe the issue"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="label-github">Category</label>
+                  <Input
+                    type="text"
+                    name="category"
+                    value={newIssue.category}
+                    onChange={(e) => setNewIssue({ ...newIssue, category: e.target.value })}
+                    placeholder="e.g. Bug, Feature"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" variant="primary" disabled={creating} className="flex-1">
+                    {creating ? 'Creating...' : 'Create issue'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowCreate(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -232,7 +265,7 @@ export const IssueDetailPage = () => {
   const { id } = useParams();
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { show, hide } = useFlash();
+  const { toasts, show, hide } = useFlash();
   const navigate = useNavigate();
 
   useEffect(() => {

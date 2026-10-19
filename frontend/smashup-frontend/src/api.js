@@ -12,20 +12,36 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
-  if (token) {
+  if (token && token !== 'undefined' && token !== 'null') {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle 401 responses - redirect to login
+// Handle 401 and auth-related 403 responses - redirect to login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const isAuthError =
+      error.response &&
+      (error.response.status === 401 ||
+        (error.response.status === 403 &&
+          (error.response.data?.code === 'token_not_valid' ||
+            error.response.data?.detail === 'Authentication credentials were not provided.')));
+
+    if (isAuthError) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('username');
+      localStorage.removeItem('email');
+      if (
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login' &&
+        window.location.pathname !== '/register'
+      ) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -35,12 +51,17 @@ export default api;
 
 export const authAPI = {
   login: (username, password) =>
+    axios.post(`${API_BASE}/auth/login/`, { username, password }),
+  token: (username, password) =>
     axios.post(`${API_BASE}/auth/token/`, { username, password }),
   refresh: (refresh) =>
     axios.post(`${API_BASE}/auth/token/refresh/`, { refresh }),
   register: (userData) =>
     axios.post(`${API_BASE}/auth/register/`, userData),
   verify: (token) => axios.post(`${API_BASE}/auth/token/verify/`, { token }),
+  logout: (refresh) =>
+    axios.post(`${API_BASE}/auth/logout/`, { refresh }),
+  getProfile: () => api.get('/auth/profile/'),
 };
 
 export const projectsAPI = {

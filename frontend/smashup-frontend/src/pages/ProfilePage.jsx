@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { issuesAPI } from '../api';
-import { Card, Button, Input, Toast, useFlash, Badge } from '../components';
+import { issuesAPI, authAPI } from '../api';
+import { Card, Toast, useFlash, Badge } from '../components';
 import { StatusBadge, PriorityBadge } from '../components';
 
 export const ProfilePage = () => {
@@ -22,13 +22,44 @@ export const ProfilePage = () => {
         navigate('/login');
         return;
       }
+      let currentUsername = localStorage.getItem('username') || 'User';
+      let currentEmail = localStorage.getItem('email') || '';
+      let currentUserId = localStorage.getItem('user_id');
+      let currentBio = '';
+
+      try {
+        const profileResp = await authAPI.getProfile();
+        if (profileResp?.data) {
+          currentUserId = profileResp.data.id || currentUserId;
+          currentUsername = profileResp.data.username || currentUsername;
+          currentEmail = profileResp.data.email || currentEmail;
+          currentBio = profileResp.data.bio || '';
+          localStorage.setItem('user_id', currentUserId);
+          localStorage.setItem('username', currentUsername);
+          if (currentEmail) localStorage.setItem('email', currentEmail);
+        }
+      } catch {
+        // Fall back to localStorage values if getProfile fails
+      }
+
       setUser({
-        username: localStorage.getItem('username') || 'User',
-        email: localStorage.getItem('email') || '',
+        id: currentUserId,
+        username: currentUsername,
+        email: currentEmail,
+        bio: currentBio,
       });
+
       const response = await issuesAPI.list();
       const allIssues = response.data.results || response.data;
-      setIssues(allIssues.filter((i) => i.created_by === user?.username));
+      setIssues(
+        allIssues.filter((i) => {
+          if (currentUserId && String(i.created_by) === String(currentUserId)) return true;
+          if (currentUsername && i.created_by === currentUsername) return true;
+          if (i.created_by?.id && String(i.created_by.id) === String(currentUserId)) return true;
+          if (i.created_by?.username && i.created_by.username === currentUsername) return true;
+          return false;
+        })
+      );
     } catch (err) {
       show('Failed to load profile', 'error');
     } finally {
@@ -56,12 +87,13 @@ export const ProfilePage = () => {
 
       <Card>
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-full bg-github-secondary flex items-center justify-center text-[24px] text-github-secondaryText">
-            {user?.username?.charAt(0)?.toUpperCase() || 'U'}
+          <div className="w-12 h-12 rounded-full bg-github-secondary flex items-center justify-center text-[24px] text-github-secondaryText font-bold">
+            {String(user?.username || 'U').charAt(0).toUpperCase()}
           </div>
           <div>
             <h2 className="text-lg font-medium text-github-text">{user?.username}</h2>
             <p className="text-github-secondaryText text-sm">{user?.email}</p>
+            {user?.bio && <p className="text-xs text-github-secondaryText mt-1">{user.bio}</p>}
           </div>
         </div>
 

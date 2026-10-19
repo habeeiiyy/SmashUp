@@ -104,9 +104,25 @@ export const FlashSuccess = ({ message }) => (
 export const useFlash = () => {
   const [toasts, setToasts] = React.useState([]);
 
+  const formatMessage = (msg) => {
+    if (!msg) return '';
+    if (typeof msg === 'string') return msg;
+    if (Array.isArray(msg)) return msg.join(', ');
+    if (typeof msg === 'object') {
+      if (msg.detail) return typeof msg.detail === 'string' ? msg.detail : formatMessage(msg.detail);
+      if (msg.message) return typeof msg.message === 'string' ? msg.message : formatMessage(msg.message);
+      if (msg.errors) return formatMessage(msg.errors);
+      return Object.entries(msg)
+        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+        .join('; ');
+    }
+    return String(msg);
+  };
+
   const show = (message, type = 'error') => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type }]);
+    const formatted = formatMessage(message);
+    setToasts((prev) => [...prev, { id, message: formatted, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 5000);
@@ -146,7 +162,7 @@ export const Toast = ({ toast, onClose }) => {
       Icon: Info,
     },
   };
-  const c = colors[toast.type];
+  const c = colors[toast.type] || colors.info;
   const Icon = c.Icon;
 
   return (
@@ -157,7 +173,7 @@ export const Toast = ({ toast, onClose }) => {
       <div className="flex justify-between items-start gap-2 mb-1">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 flex-shrink-0" />
-          <h3 className="text-xs font-semibold {c.title}">
+          <h3 className={`text-xs font-semibold ${c.title}`}>
             {toast.type === 'error' ? 'Error' : toast.type === 'success' ? 'Success' : 'Info'}
           </h3>
         </div>
@@ -216,14 +232,16 @@ export const Select = ({ ...props }) => {
 export const Badge = ({ children, variant = 'secondary', className = '' }) => {
   const variants = {
     primary: 'bg-github-purple/10 text-github-purple border border-github-purple/30',
+    purple: 'bg-github-purple/10 text-github-purple border border-github-purple/30',
     green: 'bg-github-green/10 text-github-green border border-github-green/30',
     orange: 'bg-github-orange/10 text-github-orange border border-github-orange/30',
     blue: 'bg-github-blue/10 text-github-blue border border-github-blue/30',
     red: 'bg-github-red/10 text-github-red border border-github-red/30',
     secondary: 'bg-github-secondary text-github-secondaryText border border-github-border',
   };
+  const activeStyle = variants[variant] || variants.secondary;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${variants[variant]} ${className}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${activeStyle} ${className}`}>
       {children}
     </span>
   );
@@ -237,7 +255,7 @@ export const StatusBadge = ({ status }) => {
     RESOLVED: { variant: 'green', label: 'Resolved' },
     CLOSED: { variant: 'secondary', label: 'Closed' },
   };
-  const c = config[status] || config.secondary;
+  const c = config[status] || config.CLOSED;
   return <Badge variant={c.variant}>{c.label}</Badge>;
 };
 
@@ -248,7 +266,7 @@ export const PriorityBadge = ({ priority }) => {
     HIGH: { variant: 'orange', label: 'High' },
     CRITICAL: { variant: 'red', label: 'Critical' },
   };
-  const c = config[priority] || config.green;
+  const c = config[priority] || config.MEDIUM;
   return <Badge variant={c.variant}>{c.label}</Badge>;
 };
 
@@ -260,12 +278,12 @@ export const Card = ({ children, className = '' }) => {
   );
 };
 
-export const Table = ({ children }) => (
-  <table className="table-github">{children}</table>
+export const Table = ({ children, className = '', ...props }) => (
+  <table className={`table-github ${className}`} {...props}>{children}</table>
 );
 
-export const Tbody = ({ children }) => <tbody>{children}</tbody>;
-export const Thead = ({ children }) => <thead>{children}</thead>;
+export const Tbody = ({ children, ...props }) => <tbody {...props}>{children}</tbody>;
+export const Thead = ({ children, ...props }) => <thead {...props}>{children}</thead>;
 export const Tr = ({ children, ...props }) => <tr {...props}>{children}</tr>;
 export const Th = ({ children, ...props }) => <th {...props}>{children}</th>;
 export const Td = ({ children, ...props }) => <td {...props}>{children}</td>;

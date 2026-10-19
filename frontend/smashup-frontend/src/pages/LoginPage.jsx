@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { authAPI } from '../api';
 import { Card, Button, Input, Toast, useFlash } from '../components';
 
@@ -16,14 +16,18 @@ export const LoginPage = () => {
       const response = await authAPI.login(formData.username, formData.password);
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
+      localStorage.setItem('user_id', response.data.user?.id || '');
       localStorage.setItem('username', response.data.user?.username || formData.username);
       localStorage.setItem('email', response.data.user?.email || '');
       show('Welcome back!', 'success');
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => navigate('/'), 800);
     } catch (err) {
+      const errData = err.response?.data;
       const msg =
-        err.response?.data?.detail ||
-        err.response?.data?.non_field_errors?.[0] ||
+        errData?.errors?.non_field_errors?.[0] ||
+        errData?.non_field_errors?.[0] ||
+        errData?.detail ||
+        (typeof errData === 'string' ? errData : null) ||
         'Invalid username or password';
       show(msg, 'error');
     } finally {
@@ -57,7 +61,7 @@ export const LoginPage = () => {
                 type="text"
                 name="username"
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                onChange={handleChange}
                 placeholder="Enter your username"
                 required
               />
@@ -68,7 +72,7 @@ export const LoginPage = () => {
                 type="password"
                 name="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={handleChange}
                 placeholder="Enter your password"
                 required
               />
@@ -80,12 +84,12 @@ export const LoginPage = () => {
 
           <div className="mt-6 pt-4 border-t border-github-border text-center">
             <p className="text-github-secondaryText text-sm">Don't have an account?</p>
-            <a
-              href="/register"
-              className="text-github-blue hover:underline font-medium"
+            <Link
+              to="/register"
+              className="text-github-blue hover:underline font-medium inline-block mt-1"
             >
               Create an account
-            </a>
+            </Link>
           </div>
         </Card>
       </div>

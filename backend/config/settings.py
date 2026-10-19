@@ -140,10 +140,10 @@ MEDIA_URL='/media/'
 # Django REST Framework Configuration
 # ============================================================================
 REST_FRAMEWORK = {
-    # Authentication: session (for browser) + JWT token (for API/mobile)
+    # Authentication: JWT token (for React/API) + session (for browser/admin)
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
 
     # Permissions: require authentication by default

@@ -107,7 +107,7 @@ export const RegisterPage = () => {
                 type="text"
                 name="username"
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                onChange={handleChange}
                 placeholder="johndoe"
                 required
               />
@@ -118,7 +118,7 @@ export const RegisterPage = () => {
                 type="email"
                 name="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={handleChange}
                 placeholder="john@example.com"
               />
             </div>
@@ -128,7 +128,7 @@ export const RegisterPage = () => {
                 type="password"
                 name="password1"
                 value={formData.password1}
-                onChange={(e) => setFormData({ ...formData, password1: e.target.value })}
+                onChange={handleChange}
                 placeholder="••••••••"
                 required
               />
@@ -139,7 +139,7 @@ export const RegisterPage = () => {
                 type="password"
                 name="password2"
                 value={formData.password2}
-                onChange={(e) => setFormData({ ...formData, password2: e.target.value })}
+                onChange={handleChange}
                 placeholder="••••••••"
                 required
               />
